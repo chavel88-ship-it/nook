@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nook — Content Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-mark">N</span>
+        <span class="brand-name">Nook</span>
+      </div>
+      <p class="sidebar-tagline">Turn ideas into<br>ready-to-post content.</p>
+
+      <div class="stage-tracker">
+        <div class="stage-step" id="step-intake" data-step="INTAKE">
+          <div class="step-dot"></div>
+          <div class="step-label">
+            <span class="step-name">Brief</span>
+            <span class="step-desc">5 quick questions</span>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="stage-step" id="step-ideation" data-step="IDEATION_CHOICE">
+          <div class="step-dot"></div>
+          <div class="step-label">
+            <span class="step-name">Directions</span>
+            <span class="step-desc">Pick a creative angle</span>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="stage-step" id="step-refinement" data-step="REFINEMENT">
+          <div class="step-dot"></div>
+          <div class="step-label">
+            <span class="step-name">Refine</span>
+            <span class="step-desc">Polish the draft</span>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="stage-step" id="step-done" data-step="DONE">
+          <div class="step-dot"></div>
+          <div class="step-label">
+            <span class="step-name">Done</span>
+            <span class="step-desc">Your content package</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="btn-new" class="btn-new" title="Start a new session">
+          + New brief
+        </button>
+        <p class="powered-by">Powered by IBM watsonx</p>
+      </div>
+    </aside>
+
+    <!-- Main chat panel -->
+    <main class="main">
+
+      <!-- Intake progress bar (shown only during INTAKE) -->
+      <div id="intake-bar" class="intake-bar">
+        <div id="intake-fill" class="intake-fill" style="width: 0%"></div>
+        <span
+          id="intake-label"
+          class="intake-label"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >Question 1 of 5</span>
+      </div>
+
+      <!-- Error banner -->
+      <div id="error-banner" class="error-banner hidden" role="alert">
+        <span id="error-text" class="error-text"></span>
+        <button id="btn-retry" class="btn-retry hidden">Retry</button>
+        <button id="btn-dismiss-error" class="btn-dismiss" aria-label="Dismiss">✕</button>
+      </div>
+
+      <!-- Chat log -->
+      <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
+
+      <!-- Typing indicator (hidden by default) -->
+      <div id="typing" class="typing hidden" aria-label="Nook is thinking">
+        <span></span><span></span><span></span>
+      </div>
+
+      <!-- Input area -->
+      <form id="chat-form" class="chat-form" autocomplete="off">
+        <input
+          id="chat-input"
+          type="text"
+          placeholder="Type your reply…"
+          autocomplete="off"
+          aria-label="Message"
+        />
+        <button type="submit" id="btn-send" class="btn-send" aria-label="Send">
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 10L17 3L12 10L17 17L2 10Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </form>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
