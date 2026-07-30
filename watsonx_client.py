@@ -16,7 +16,9 @@ The cache is protected by a threading.Lock so it is safe under Flask's
 multi-threaded dev server and under gunicorn with threaded workers.
 """
 
+import json
 import os
+import re
 import time
 import threading
 import requests
@@ -240,7 +242,6 @@ def _mock_generate(prompt: str) -> str:
     Attempts to extract the business name from the prompt so demo runs
     look personalised rather than generic.
     """
-    import re
     lower = prompt.lower()
 
     # Extract business name from structured prompts
@@ -285,3 +286,139 @@ def _mock_generate(prompt: str) -> str:
         )
 
     return "[mock watsonx response] " + prompt[:120]
+
+
+# ── Campaign generator ────────────────────────────────────────────────────
+
+def generate_campaign(
+    business_name: str,
+    industry: str,
+    target_audience: str,
+    campaign_goal: str,
+    tone: str,
+    platform: str,
+) -> dict:
+    """
+    Generate a full multi-platform marketing campaign via watsonx.
+
+    Returns a dict with keys: campaign_title, campaign_summary, facebook_post,
+    instagram_post, linkedin_post, blog, email, call_to_action, seo_keywords,
+    hashtags, image_prompts.
+
+    Falls back to a mock dict when USE_MOCK is True or credentials are missing.
+    """
+    if USE_MOCK or _CREDS_MISSING:
+        return _mock_campaign(business_name, industry, target_audience, campaign_goal, tone, platform)
+
+    prompt = f"""You are an expert digital marketing strategist.
+Return ONLY valid JSON — no markdown, no explanation.
+
+Generate a complete marketing campaign for the following brief:
+
+Business Name: {business_name}
+Industry: {industry}
+Target Audience: {target_audience}
+Campaign Goal: {campaign_goal}
+Tone: {tone}
+Platform: {platform}
+
+The JSON must contain exactly these fields:
+{{
+    "campaign_title": "",
+    "campaign_summary": "",
+    "facebook_post": "",
+    "instagram_post": "",
+    "linkedin_post": "",
+    "blog": "",
+    "email": "",
+    "call_to_action": "",
+    "seo_keywords": ["", "", "", "", ""],
+    "hashtags": ["", "", "", "", ""],
+    "image_prompts": ["", "", ""]
+}}
+"""
+
+    response = generate_with_retry(prompt, max_new_tokens=1800, temperature=0.7)
+
+    try:
+        return json.loads(response)
+    except (json.JSONDecodeError, ValueError):
+        return {
+            "campaign_title":   business_name,
+            "campaign_summary": response,
+            "facebook_post":    "",
+            "instagram_post":   "",
+            "linkedin_post":    "",
+            "blog":             "",
+            "email":            "",
+            "call_to_action":   "",
+            "seo_keywords":     [],
+            "hashtags":         [],
+            "image_prompts":    [],
+        }
+
+
+def _mock_campaign(
+    business_name: str,
+    industry: str,
+    target_audience: str,
+    campaign_goal: str,
+    tone: str,
+    platform: str,
+) -> dict:
+    """Rich mock campaign for local development and demos."""
+    name = business_name or "Your Business"
+    return {
+        "campaign_title":   f"The {name} Launch Campaign",
+        "campaign_summary": (
+            f"A {tone.lower()} campaign targeting {target_audience} across {platform}, "
+            f"designed to {campaign_goal.lower()}. Built around authentic storytelling "
+            f"and strong calls to action tailored to the {industry} space."
+        ),
+        "facebook_post": (
+            f"✨ Introducing {name} — made for {target_audience} who demand more.\n\n"
+            f"We started {name} because we believed {industry} deserved better. "
+            f"Today, we're proud to share what we've built. "
+            f"Come see what the buzz is about 👇\n\n"
+            f"📌 {campaign_goal}"
+        ),
+        "instagram_post": (
+            f"Big things are happening at {name} 🚀\n\n"
+            f"Swipe to see why {target_audience} are loving what we do.\n\n"
+            f"#NewLaunch #{name.replace(' ', '')} #SmallBusiness"
+        ),
+        "linkedin_post": (
+            f"We're excited to share a milestone at {name}.\n\n"
+            f"Our team has been working hard to serve {target_audience} in the {industry} space. "
+            f"Our goal: {campaign_goal}.\n\n"
+            f"We'd love your support — share this post if you believe in what we're building."
+        ),
+        "blog": (
+            f"# How {name} Is Changing the {industry} Game\n\n"
+            f"When we set out to build {name}, we had one clear mission: {campaign_goal}. "
+            f"Our target audience — {target_audience} — told us what they needed, and we listened.\n\n"
+            f"Here's what makes {name} different, and why now is the perfect time to get involved."
+        ),
+        "email": (
+            f"Subject: You're invited — {name} wants to work with you\n\n"
+            f"Hi [First Name],\n\n"
+            f"We built {name} with {target_audience} in mind. Everything we do is focused on one goal: "
+            f"{campaign_goal}.\n\n"
+            f"Click the button below to get started — we'd love to have you with us.\n\n"
+            f"Warm regards,\nThe {name} Team"
+        ),
+        "call_to_action":  f"Start your journey with {name} today — limited spots available.",
+        "seo_keywords":    [industry, name, target_audience, campaign_goal, f"{industry} near me"],
+        "hashtags":        [
+            f"#{name.replace(' ', '')}",
+            "#SmallBusiness",
+            "#ShopLocal",
+            f"#{industry.replace(' ', '')}",
+            "#SupportSmallBusiness",
+        ],
+        "image_prompts": [
+            f"A warm, professional photo of the {name} team in a {industry} setting, natural lighting, friendly smiles.",
+            f"Close-up product/service shot for {name}, clean background, premium feel, lifestyle context.",
+            f"Before-and-after style graphic showing the transformation {name} delivers for {target_audience}.",
+        ],
+    }

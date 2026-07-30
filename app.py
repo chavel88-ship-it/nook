@@ -30,6 +30,7 @@ from flask_limiter.util import get_remote_address
 
 from workflow import handle_message
 from session_store import evict_expired, delete_session
+from image_client import generate_image
 
 app = Flask(__name__, static_folder="static")
 
@@ -114,6 +115,22 @@ def reset():
         delete_session(session_id)
     return jsonify({"ok": True})
 
+@app.route("/api/image", methods=["POST"])
+def api_image():
+    data = request.get_json()
+
+    prompt = data.get("prompt", "").strip()
+
+    if not prompt:
+        return jsonify({
+            "success": False,
+            "message": "Prompt is required."
+        }), 400
+
+    result = generate_image(prompt)
+
+    return jsonify(result)
+
 
 # ── Error handlers ────────────────────────────────────────────────────────
 
@@ -127,14 +144,20 @@ def handle_rate_limit(exc):
     }), 429
 
 
+from werkzeug.exceptions import HTTPException
+
 @app.errorhandler(Exception)
 def handle_unexpected(exc):
-    """Catch-all: return a JSON error body instead of an HTML traceback."""
+    # Let Flask handle 404, 405, etc. normally
+    if isinstance(exc, HTTPException):
+        return exc
+
     app.logger.exception("Unhandled exception: %s", exc)
+
     return jsonify({
-        "error":     True,
+        "error": True,
         "retryable": False,
-        "reply":     "An unexpected server error occurred. Please try again later.",
+        "reply": "An unexpected server error occurred."
     }), 500
 
 
