@@ -202,7 +202,7 @@ South Africa
 
 ## IBM SkillsBuild
 
-https://skills.yourlearning.ibm.com/activity/ALM-COURSE_4071307?ngo-id=0302&utm_campaign=aca-ai-builders-challenge
+https://skills.yourlearning.ibm.com/certificate/share/38536f275dewogICJvYmplY3RJZCIgOiAiQUxNLUNPVVJTRV80MDcxMzA3IiwKICAib2JqZWN0VHlwZSIgOiAiQUNUSVZJVFkiLAogICJsZWFybmVyQ05VTSIgOiAiODQyMzA5OVJFRyIKfQ72e29a68a0-10
 
 ---
 
