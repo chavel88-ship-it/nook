@@ -1,33 +1,29 @@
 /**
- * Nook — AI Marketing Studio
- * Frontend controller
+ * Nook — AI Marketing Studio  |  app.js
  *
  * Flow:
- *  1. startSession() -> POST /api/start -> show first intake question
- *  2. sendMessage()  -> POST /api/message -> collect answers one by one
- *  3. On stage "DONE" -> renderCampaign(data.campaign) -> show campaign cards
- *
- * Error handling:
- *  - 2xx with error:true -> in-chat error bubble + banner
- *  - Network/4xx/5xx     -> in-chat error bubble + banner with optional retry
- *  - Stage-aware retry   -> replays lastMessage only if stage hasn't changed
+ *  1. Page load  → show welcome hero screen
+ *  2. startSession() → POST /api/start → hide hero, show chat, first question
+ *  3. sendMessage()  → POST /api/message → collect 6 answers
+ *  4. stage === "DONE" → renderCampaign(data.campaign) → show campaign dashboard
  */
 
 /* ── DOM refs ───────────────────────────────────────────────────────────── */
+const welcomeScreen  = document.getElementById("welcome-screen");
 const chatLog        = document.getElementById("chat-log");
+const campaignOutput = document.getElementById("campaign-output");
+const inputDock      = document.getElementById("input-footer");
 const chatForm       = document.getElementById("chat-form");
 const chatInput      = document.getElementById("chat-input");
 const btnSend        = document.getElementById("btn-send");
 const btnNew         = document.getElementById("btn-new");
-const typingEl       = document.getElementById("typing");
+const typingRow      = document.getElementById("typing");
 const errorBanner    = document.getElementById("error-banner");
 const errorText      = document.getElementById("error-text");
 const btnRetry       = document.getElementById("btn-retry");
 const btnDismiss     = document.getElementById("btn-dismiss-error");
-const campaignOutput = document.getElementById("campaign-output");
-const inputFooter    = document.getElementById("input-footer");
-const progressFill   = document.getElementById("progress-fill");
-const progressLabel  = document.getElementById("progress-label");
+const progFill       = document.getElementById("progress-fill");
+const progLabel      = document.getElementById("progress-label");
 const topbarTitle    = document.getElementById("topbar-title");
 const topbarBadge    = document.getElementById("topbar-badge");
 
@@ -38,31 +34,26 @@ let lastMessage      = "";
 let lastMessageStage = null;
 let currentStage     = "INTAKE";
 
-const TOTAL_QUESTIONS = 6;
+const TOTAL_Q = 6;
 
 /* ── Sidebar step tracker ───────────────────────────────────────────────── */
 
 function setStep(stage) {
   currentStage = stage;
+
   document.querySelectorAll(".step-item").forEach(el => {
     const s = el.dataset.stage;
     el.classList.remove("active", "done");
-    if (s === stage) {
-      el.classList.add("active");
-    } else if (stage === "DONE" && s === "INTAKE") {
-      el.classList.add("done");
-    }
+    if (s === stage)                        el.classList.add("active");
+    else if (stage === "DONE" && s === "INTAKE") el.classList.add("done");
   });
 
-  // Update topbar
   if (stage === "DONE") {
     topbarBadge.textContent = "Campaign Ready";
-    topbarBadge.style.background = "var(--success-bg)";
-    topbarBadge.style.color = "var(--success)";
+    topbarBadge.classList.add("done");
   } else {
     topbarBadge.textContent = "Brief";
-    topbarBadge.style.background = "";
-    topbarBadge.style.color = "";
+    topbarBadge.classList.remove("done");
   }
 }
 
@@ -70,14 +61,14 @@ function setStep(stage) {
 
 function setProgress(current, total) {
   const pct = Math.round((current / total) * 100);
-  progressFill.style.width = `${pct}%`;
-  progressLabel.textContent = `${current} of ${total}`;
+  progFill.style.width = `${pct}%`;
+  progLabel.textContent = `${current} of ${total}`;
 }
 
 /* ── Error banner ───────────────────────────────────────────────────────── */
 
-function showErrorBanner(message, retryable = false) {
-  errorText.textContent = message;
+function showErrorBanner(msg, retryable = false) {
+  errorText.textContent = msg;
   btnRetry.classList.toggle("hidden", !retryable);
   errorBanner.classList.remove("hidden");
 }
@@ -92,8 +83,34 @@ function setLoading(active) {
   isLoading = active;
   chatInput.disabled = active;
   btnSend.disabled   = active;
-  typingEl.classList.toggle("hidden", !active);
+  typingRow.classList.toggle("hidden", !active);
   if (!active) chatInput.focus();
+}
+
+/* ── Screen switching ───────────────────────────────────────────────────── */
+
+function showWelcome() {
+  welcomeScreen.classList.remove("hidden");
+  chatLog.classList.add("hidden");
+  campaignOutput.classList.add("hidden");
+  inputDock.classList.add("hidden");
+  topbarTitle.textContent = "New Campaign";
+  setStep("INTAKE");
+  setProgress(0, TOTAL_Q);
+}
+
+function showChat() {
+  welcomeScreen.classList.add("hidden");
+  chatLog.classList.remove("hidden");
+  campaignOutput.classList.add("hidden");
+  inputDock.classList.remove("hidden");
+}
+
+function showCampaign() {
+  welcomeScreen.classList.add("hidden");
+  chatLog.classList.add("hidden");
+  campaignOutput.classList.remove("hidden");
+  inputDock.classList.add("hidden");
 }
 
 /* ── Chat messages ──────────────────────────────────────────────────────── */
@@ -122,227 +139,179 @@ function removeSkeleton(el) {
 
 /* ── Campaign renderer ──────────────────────────────────────────────────── */
 
-const PLATFORM_CONFIGS = [
+const PLATFORMS = [
   { key: "facebook_post",  label: "Facebook",  dot: "fb" },
   { key: "instagram_post", label: "Instagram", dot: "ig" },
   { key: "linkedin_post",  label: "LinkedIn",  dot: "li" },
-  { key: "email",          label: "Email",     dot: "email", full: true },
-  { key: "blog",           label: "Blog Post", dot: "blog",  full: true },
+  { key: "email",          label: "Email",     dot: "em",  wide: true },
+  { key: "blog",           label: "Blog Post", dot: "bl",  full: true },
 ];
 
-function makeCopyBtn(text) {
+function esc(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function makeCopyBtn(text, cls = "card-copy-btn") {
   const btn = document.createElement("button");
-  btn.className = "card-copy-btn";
+  btn.type = "button";
+  btn.className = cls;
   btn.textContent = "Copy";
   btn.addEventListener("click", () => {
     navigator.clipboard.writeText(text).then(() => {
       btn.textContent = "✓ Copied";
       btn.classList.add("copied");
-      setTimeout(() => {
-        btn.textContent = "Copy";
-        btn.classList.remove("copied");
-      }, 2000);
-    }).catch(() => {
-      btn.textContent = "Select & copy manually";
-    });
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    }).catch(() => { btn.textContent = "Select & copy"; });
   });
   return btn;
 }
 
-function renderCampaign(campaign) {
-  // Hide chat, show campaign
-  chatLog.classList.add("hidden");
-  campaignOutput.classList.remove("hidden");
-  inputFooter.classList.add("hidden");
+function renderCampaign(c) {
+  showCampaign();
   campaignOutput.innerHTML = "";
 
   /* ── Header ── */
-  const header = document.createElement("div");
-  header.className = "campaign-header";
+  const header = el("div", "campaign-header");
+  const titleRow = el("div", "campaign-title-row");
 
-  const titleRow = document.createElement("div");
-  titleRow.className = "campaign-title-row";
+  const title = el("h2", "campaign-title");
+  title.textContent = c.campaign_title || "Your Campaign";
+  topbarTitle.textContent = c.campaign_title || "Your Campaign";
 
-  const title = document.createElement("h2");
-  title.className = "campaign-title";
-  title.textContent = campaign.campaign_title || "Your Campaign";
-  topbarTitle.textContent = campaign.campaign_title || "Your Campaign";
-
-  const actions = document.createElement("div");
-  actions.className = "campaign-actions";
-
-  const copyAllBtn = document.createElement("button");
-  copyAllBtn.className = "btn-export primary";
-  copyAllBtn.innerHTML = `
-    <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 11H2.5A1.5 1.5 0 011 9.5V3A1.5 1.5 0 012.5 1.5H8A1.5 1.5 0 019.5 3V3.5" stroke="currentColor" stroke-width="1.5"/></svg>
-    Copy All`;
-  copyAllBtn.addEventListener("click", () => {
-    const fullText = buildFullCampaignText(campaign);
-    navigator.clipboard.writeText(fullText).then(() => {
-      copyAllBtn.textContent = "✓ All Copied!";
-      setTimeout(() => {
-        copyAllBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" width="13" height="13"><rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 11H2.5A1.5 1.5 0 011 9.5V3A1.5 1.5 0 012.5 1.5H8A1.5 1.5 0 019.5 3V3.5" stroke="currentColor" stroke-width="1.5"/></svg> Copy All`;
-      }, 2500);
+  const actions = el("div", "campaign-actions");
+  const copyAll = el("button", "btn-copy-all");
+  copyAll.type = "button";
+  copyAll.textContent = "⬇ Copy All";
+  copyAll.addEventListener("click", () => {
+    navigator.clipboard.writeText(buildText(c)).then(() => {
+      copyAll.textContent = "✓ All Copied!";
+      setTimeout(() => { copyAll.textContent = "⬇ Copy All"; }, 2500);
     });
   });
+  actions.appendChild(copyAll);
 
-  actions.appendChild(copyAllBtn);
-  titleRow.appendChild(title);
-  titleRow.appendChild(actions);
+  titleRow.append(title, actions);
   header.appendChild(titleRow);
 
-  if (campaign.campaign_summary) {
-    const summary = document.createElement("p");
-    summary.className = "campaign-summary";
-    summary.textContent = campaign.campaign_summary;
+  if (c.campaign_summary) {
+    const summary = el("p", "campaign-summary");
+    summary.textContent = c.campaign_summary;
     header.appendChild(summary);
   }
-
   campaignOutput.appendChild(header);
 
-  /* ── CTA Row ── */
-  if (campaign.call_to_action) {
-    const ctaRow = document.createElement("div");
-    ctaRow.className = "cta-row";
-    ctaRow.innerHTML = `
-      <div class="cta-icon">🎯</div>
-      <div class="cta-text">
+  /* ── CTA banner ── */
+  if (c.call_to_action) {
+    const banner = el("div", "cta-banner");
+    banner.innerHTML = `
+      <div class="cta-icon-wrap">🎯</div>
+      <div class="cta-info">
         <div class="cta-label">Call to Action</div>
-        <div class="cta-value">${escHtml(campaign.call_to_action)}</div>
+        <div class="cta-value">${esc(c.call_to_action)}</div>
       </div>`;
-    const ctaCopy = makeCopyBtn(campaign.call_to_action);
-    ctaCopy.style.flexShrink = "0";
-    ctaRow.appendChild(ctaCopy);
-    campaignOutput.appendChild(ctaRow);
+    const cb = makeCopyBtn(c.call_to_action, "cta-copy-btn");
+    banner.appendChild(cb);
+    campaignOutput.appendChild(banner);
   }
 
   /* ── Platform cards ── */
-  const grid = document.createElement("div");
-  grid.className = "cards-grid";
+  const grid = el("div", "cards-grid");
 
-  PLATFORM_CONFIGS.forEach(({ key, label, dot, full }) => {
-    const content = campaign[key];
+  PLATFORMS.forEach(({ key, label, dot, wide, full }) => {
+    const content = c[key];
     if (!content) return;
 
-    const card = document.createElement("div");
-    card.className = `content-card${full ? " full" : ""}`;
+    const card = el("div", "content-card" + (full ? " full" : wide ? " wide" : ""));
 
-    const cardHeader = document.createElement("div");
-    cardHeader.className = "card-header";
-    cardHeader.innerHTML = `
-      <div class="card-platform">
-        <span class="platform-dot ${dot}"></span>
-        <span class="platform-name">${escHtml(label)}</span>
-      </div>`;
-    cardHeader.appendChild(makeCopyBtn(content));
+    const head = el("div", "card-head");
+    const ptag = el("div", "platform-tag");
+    const pdot = el("span", `p-dot ${dot}`);
+    const pname = el("span", "p-name");
+    pname.textContent = label;
+    ptag.append(pdot, pname);
+    head.append(ptag, makeCopyBtn(content));
 
-    const cardBody = document.createElement("div");
-    cardBody.className = "card-body";
-    cardBody.textContent = content;
+    const body = el("div", "card-body");
+    body.textContent = content;
 
-    card.appendChild(cardHeader);
-    card.appendChild(cardBody);
+    card.append(head, body);
     grid.appendChild(card);
   });
 
   campaignOutput.appendChild(grid);
 
-  /* ── SEO keywords + hashtags ── */
-  const hasKeywords = Array.isArray(campaign.seo_keywords) && campaign.seo_keywords.some(Boolean);
-  const hasHashtags = Array.isArray(campaign.hashtags) && campaign.hashtags.some(Boolean);
+  /* ── Tags: SEO keywords ── */
+  const hasKw = Array.isArray(c.seo_keywords) && c.seo_keywords.some(Boolean);
+  const hasHt = Array.isArray(c.hashtags)     && c.hashtags.some(Boolean);
 
-  if (hasKeywords || hasHashtags) {
-    const tagsSection = document.createElement("div");
-    tagsSection.className = "tags-section";
+  if (hasKw || hasHt) {
+    const block = el("div", "tags-block");
 
-    if (hasKeywords) {
-      const kLabel = document.createElement("div");
-      kLabel.className = "tags-section-title";
-      kLabel.textContent = "SEO Keywords";
-      tagsSection.appendChild(kLabel);
-
-      const kRow = document.createElement("div");
-      kRow.className = "tags-row";
-      campaign.seo_keywords.filter(Boolean).forEach(kw => {
-        const tag = document.createElement("span");
-        tag.className = "tag keyword";
-        tag.textContent = kw;
-        kRow.appendChild(tag);
+    if (hasKw) {
+      const lbl = el("div", "tags-section-title"); lbl.textContent = "SEO Keywords";
+      const row = el("div", "tags-row");
+      c.seo_keywords.filter(Boolean).forEach(kw => {
+        const t = el("span", "tag kw"); t.textContent = kw; row.appendChild(t);
       });
-      tagsSection.appendChild(kRow);
+      block.append(lbl, row);
     }
 
-    if (hasHashtags) {
-      const hLabel = document.createElement("div");
-      hLabel.className = "tags-section-title";
-      hLabel.style.marginTop = hasKeywords ? "18px" : "0";
-      hLabel.textContent = "Hashtags";
-      tagsSection.appendChild(hLabel);
-
-      const hRow = document.createElement("div");
-      hRow.className = "tags-row";
-      campaign.hashtags.filter(Boolean).forEach(ht => {
-        const tag = document.createElement("span");
-        tag.className = "tag hashtag";
-        tag.textContent = ht;
-        hRow.appendChild(tag);
+    if (hasHt) {
+      const lbl = el("div", "tags-section-title");
+      lbl.textContent = "Hashtags";
+      if (hasKw) lbl.style.marginTop = "18px";
+      const row = el("div", "tags-row");
+      c.hashtags.filter(Boolean).forEach(ht => {
+        const t = el("span", "tag ht"); t.textContent = ht; row.appendChild(t);
       });
-      tagsSection.appendChild(hRow);
+      block.append(lbl, row);
     }
 
-    campaignOutput.appendChild(tagsSection);
+    campaignOutput.appendChild(block);
   }
 
   /* ── Image prompts ── */
-  const hasPrompts = Array.isArray(campaign.image_prompts) && campaign.image_prompts.some(Boolean);
-  if (hasPrompts) {
-    const imgSection = document.createElement("div");
-    imgSection.className = "image-section";
+  const hasImg = Array.isArray(c.image_prompts) && c.image_prompts.some(Boolean);
+  if (hasImg) {
+    const block = el("div", "img-prompts-block");
+    const lbl = el("div", "img-prompts-title"); lbl.textContent = "Visual / Image Prompts";
+    const list = el("div", "img-prompt-list");
 
-    const imgTitle = document.createElement("div");
-    imgTitle.className = "image-section-title";
-    imgTitle.textContent = "Visual / Image Prompts";
-    imgSection.appendChild(imgTitle);
-
-    const list = document.createElement("div");
-    list.className = "image-prompts-list";
-
-    campaign.image_prompts.filter(Boolean).forEach((prompt, i) => {
-      const item = document.createElement("div");
-      item.className = "image-prompt-item";
-      item.innerHTML = `
-        <div class="image-prompt-num">${i + 1}</div>
-        <div class="image-prompt-text">${escHtml(prompt)}</div>`;
-      list.appendChild(item);
+    c.image_prompts.filter(Boolean).forEach((prompt, i) => {
+      const row = el("div", "img-prompt-row");
+      const num = el("div", "prompt-num"); num.textContent = i + 1;
+      const txt = el("div", "prompt-text"); txt.textContent = prompt;
+      row.append(num, txt);
+      list.appendChild(row);
     });
 
-    imgSection.appendChild(list);
-    campaignOutput.appendChild(imgSection);
+    block.append(lbl, list);
+    campaignOutput.appendChild(block);
   }
 }
 
-function buildFullCampaignText(campaign) {
-  const lines = [];
-  if (campaign.campaign_title)   lines.push(`CAMPAIGN: ${campaign.campaign_title}\n`);
-  if (campaign.campaign_summary) lines.push(`SUMMARY\n${campaign.campaign_summary}\n`);
-  if (campaign.call_to_action)   lines.push(`CALL TO ACTION\n${campaign.call_to_action}\n`);
-  PLATFORM_CONFIGS.forEach(({ key, label }) => {
-    if (campaign[key]) lines.push(`${label.toUpperCase()}\n${campaign[key]}\n`);
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+function buildText(c) {
+  const parts = [];
+  if (c.campaign_title)   parts.push(`CAMPAIGN: ${c.campaign_title}\n`);
+  if (c.campaign_summary) parts.push(`SUMMARY\n${c.campaign_summary}\n`);
+  if (c.call_to_action)   parts.push(`CALL TO ACTION\n${c.call_to_action}\n`);
+  PLATFORMS.forEach(({ key, label }) => {
+    if (c[key]) parts.push(`${label.toUpperCase()}\n${c[key]}\n`);
   });
-  if (campaign.seo_keywords?.length) lines.push(`SEO KEYWORDS\n${campaign.seo_keywords.join(", ")}\n`);
-  if (campaign.hashtags?.length)     lines.push(`HASHTAGS\n${campaign.hashtags.join(" ")}\n`);
-  if (campaign.image_prompts?.length) {
-    lines.push(`IMAGE PROMPTS\n${campaign.image_prompts.map((p, i) => `${i + 1}. ${p}`).join("\n")}\n`);
+  if (c.seo_keywords?.length) parts.push(`SEO KEYWORDS\n${c.seo_keywords.join(", ")}\n`);
+  if (c.hashtags?.length)     parts.push(`HASHTAGS\n${c.hashtags.join(" ")}\n`);
+  if (c.image_prompts?.length) {
+    parts.push(`IMAGE PROMPTS\n${c.image_prompts.map((p,i)=>`${i+1}. ${p}`).join("\n")}\n`);
   }
-  return lines.join("\n");
-}
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return parts.join("\n");
 }
 
 /* ── API ────────────────────────────────────────────────────────────────── */
@@ -356,7 +325,7 @@ async function apiFetch(endpoint, body) {
 
   let data;
   try { data = await resp.json(); }
-  catch { throw new Error(`Server returned non-JSON response (HTTP ${resp.status}).`); }
+  catch { throw new Error(`Server returned non-JSON (HTTP ${resp.status}).`); }
 
   if (!resp.ok) {
     const err = new Error(data?.reply || `Server error (HTTP ${resp.status}).`);
@@ -375,20 +344,16 @@ async function startSession() {
     try { await apiFetch("/api/reset", { session_id: sessionId }); } catch { /* best-effort */ }
   }
 
-  chatLog.classList.remove("hidden");
   chatLog.innerHTML = "";
   campaignOutput.innerHTML = "";
-  campaignOutput.classList.add("hidden");
-  inputFooter.classList.remove("hidden");
-
   sessionId        = null;
   lastMessage      = "";
   lastMessageStage = null;
 
-  setStep("INTAKE");
-  setProgress(0, TOTAL_QUESTIONS);
-  topbarTitle.textContent = "New Campaign";
+  showWelcome();
 
+  // Immediately transition to chat + start loading
+  showChat();
   const skeleton = addSkeletonBubble();
   setLoading(true);
 
@@ -400,8 +365,9 @@ async function startSession() {
   } catch (err) {
     removeSkeleton(skeleton);
     setLoading(false);
-    showErrorBanner(err.message || "Failed to start. Please refresh.", false);
-    addMessage("⚠ Couldn't connect. Please refresh the page.", "error");
+    showChat();
+    showErrorBanner(err.message || "Failed to connect. Please refresh.", false);
+    addMessage("⚠ Couldn't connect to the server. Please refresh.", "error");
   }
 }
 
@@ -424,8 +390,7 @@ async function sendMessage(text) {
   } catch (err) {
     setLoading(false);
     const retryable = err.retryable ?? false;
-    const hint = retryable ? " You can retry above." : "";
-    addMessage(`⚠ ${err.message}${hint}`, "error");
+    addMessage(`⚠ ${err.message}${retryable ? " You can retry above." : ""}`, "error");
     showErrorBanner(err.message, retryable);
   }
 }
@@ -434,15 +399,11 @@ function processResponse(data) {
   setLoading(false);
 
   if (data.stage) setStep(data.stage);
+  if (data.intake_progress) setProgress(data.intake_progress.current, data.intake_progress.total);
 
-  if (data.intake_progress) {
-    setProgress(data.intake_progress.current, data.intake_progress.total);
-  }
-
-  // Soft error (2xx but error flag set)
+  // Soft error
   if (data.error) {
-    const hint = data.retryable ? " Please retry." : " Please contact support.";
-    addMessage(`⚠ ${data.reply}${hint}`, "error");
+    addMessage(`⚠ ${data.reply}${data.retryable ? " Please retry." : ""}`, "error");
     showErrorBanner(data.reply, data.retryable ?? false);
     return;
   }
@@ -450,8 +411,8 @@ function processResponse(data) {
   // Campaign complete
   if (data.stage === "DONE" && data.campaign) {
     addMessage(data.reply || "Your campaign is ready!", "bot");
-    setTimeout(() => renderCampaign(data.campaign), 400);
-    setProgress(TOTAL_QUESTIONS, TOTAL_QUESTIONS);
+    setProgress(TOTAL_Q, TOTAL_Q);
+    setTimeout(() => renderCampaign(data.campaign), 350);
     return;
   }
 
@@ -481,4 +442,6 @@ btnNew.addEventListener("click", () => {
 });
 
 /* ── Boot ───────────────────────────────────────────────────────────────── */
+// Show welcome hero immediately, then auto-start
+showWelcome();
 startSession();

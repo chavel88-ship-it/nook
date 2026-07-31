@@ -4,21 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nook — AI Marketing Studio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 
   <div class="app-shell">
 
-    <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+    <!-- ── Sidebar ────────────────────────────────────────────────── -->
     <aside class="sidebar">
+
       <div class="sidebar-header">
         <div class="logo">
           <div class="logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
           </div>
           <div class="logo-text">
@@ -29,109 +28,136 @@
       </div>
 
       <nav class="sidebar-nav">
-        <div class="nav-section-label">Campaign Flow</div>
-        <div class="step-list" id="step-list">
+        <p class="nav-label">Workflow</p>
+        <div class="step-list">
+
           <div class="step-item active" data-stage="INTAKE" id="step-INTAKE">
-            <div class="step-icon-wrap"><div class="step-icon">1</div></div>
-            <div class="step-info">
+            <div class="step-num">1</div>
+            <div class="step-body">
               <span class="step-title">Brief</span>
               <span class="step-sub">6 quick questions</span>
             </div>
-            <div class="step-status-dot"></div>
+            <div class="step-dot"></div>
           </div>
-          <div class="step-connector-line"></div>
+
+          <div class="step-line"></div>
+
           <div class="step-item" data-stage="DONE" id="step-DONE">
-            <div class="step-icon-wrap"><div class="step-icon">2</div></div>
-            <div class="step-info">
+            <div class="step-num">2</div>
+            <div class="step-body">
               <span class="step-title">Campaign</span>
               <span class="step-sub">Full content package</span>
             </div>
-            <div class="step-status-dot"></div>
+            <div class="step-dot"></div>
           </div>
+
+        </div>
+
+        <div class="sidebar-tips">
+          <p class="tips-label">What you get</p>
+          <ul class="tips-list">
+            <li>Facebook &amp; Instagram posts</li>
+            <li>LinkedIn &amp; email copy</li>
+            <li>Blog post draft</li>
+            <li>SEO keywords + hashtags</li>
+            <li>Visual / image prompts</li>
+          </ul>
         </div>
       </nav>
 
-      <div class="sidebar-actions">
-        <button id="btn-new" class="btn-new-campaign" title="Start a new campaign">
-          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="sidebar-bottom">
+        <button id="btn-new" class="btn-new">
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           New Campaign
         </button>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="powered-badge">
+        <div class="powered">
           <span class="powered-dot"></span>
           Powered by IBM watsonx
         </div>
       </div>
+
     </aside>
 
-    <!-- ── Main content ─────────────────────────────────────────────── -->
+    <!-- ── Main panel ─────────────────────────────────────────────── -->
     <main class="main-panel">
 
-      <!-- Top bar -->
+      <!-- Topbar -->
       <header class="topbar">
         <div class="topbar-left">
-          <h1 class="topbar-title" id="topbar-title">New Campaign</h1>
-          <span class="topbar-badge" id="topbar-badge">Brief</span>
+          <h1 class="page-title" id="topbar-title">New Campaign</h1>
+          <span class="stage-pill" id="topbar-badge">Brief</span>
         </div>
         <div class="topbar-right">
-          <div class="progress-wrap" id="progress-wrap">
-            <div class="progress-track">
-              <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+          <div class="prog-group" id="progress-wrap">
+            <div class="prog-bar">
+              <div class="prog-fill" id="progress-fill" style="width:0%"></div>
             </div>
-            <span class="progress-label" id="progress-label">0 of 6</span>
+            <span class="prog-label" id="progress-label">0 of 6</span>
           </div>
         </div>
       </header>
 
       <!-- Error banner -->
       <div id="error-banner" class="error-banner hidden" role="alert">
-        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15" style="flex-shrink:0"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
         <span id="error-text" class="error-text"></span>
         <button id="btn-retry" class="btn-retry hidden">↺ Retry</button>
         <button id="btn-dismiss-error" class="btn-dismiss" aria-label="Dismiss">✕</button>
       </div>
 
-      <!-- Chat / Campaign area -->
-      <div class="content-area" id="content-area">
+      <!-- Scrollable content -->
+      <div class="scroll-area">
 
-        <!-- Chat log (shown during INTAKE) -->
-        <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
+        <!-- Welcome hero (shown before session loads) -->
+        <div id="welcome-screen" class="welcome-screen">
+          <div class="welcome-icon">
+            <svg viewBox="0 0 24 24" fill="none" width="32" height="32"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h2 class="welcome-title">Ready to build your campaign?</h2>
+          <p class="welcome-sub">Answer 6 quick questions and Nook will generate a full multi-platform marketing campaign — posts, email, blog, hashtags and more.</p>
+          <div class="welcome-chips">
+            <span class="chip">Facebook</span>
+            <span class="chip">Instagram</span>
+            <span class="chip">LinkedIn</span>
+            <span class="chip">Email</span>
+            <span class="chip">Blog</span>
+            <span class="chip">SEO</span>
+          </div>
+        </div>
 
-        <!-- Campaign output (shown when DONE) -->
+        <!-- Chat log -->
+        <div id="chat-log" class="chat-log hidden" role="log" aria-live="polite"></div>
+
+        <!-- Campaign output -->
         <div id="campaign-output" class="campaign-output hidden"></div>
 
       </div>
 
       <!-- Typing indicator -->
-      <div id="typing" class="typing-indicator hidden" aria-label="Nook is thinking">
-        <div class="typing-bubble">
-          <span></span><span></span><span></span>
-        </div>
-        <span class="typing-text">Generating your campaign…</span>
+      <div id="typing" class="typing-row hidden" aria-label="Nook is thinking">
+        <div class="typing-bubble"><span></span><span></span><span></span></div>
+        <span class="typing-label">Generating your campaign…</span>
       </div>
 
-      <!-- Input form (hidden when campaign is shown) -->
-      <footer class="input-footer" id="input-footer">
-        <form id="chat-form" class="chat-form" autocomplete="off">
-          <div class="input-wrap">
+      <!-- Input -->
+      <div class="input-dock" id="input-footer">
+        <form id="chat-form" class="input-form" autocomplete="off">
+          <div class="input-box">
             <input
               id="chat-input"
               type="text"
-              placeholder="Type your answer…"
+              placeholder="Type your answer and press Enter…"
               autocomplete="off"
               aria-label="Message"
             />
-            <button type="submit" id="btn-send" class="btn-send" aria-label="Send">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M3 10L16.5 3.5L11 10L16.5 16.5L3 10Z" fill="currentColor"/>
+            <button type="submit" id="btn-send" class="send-btn" aria-label="Send">
+              <svg viewBox="0 0 20 20" fill="none" width="16" height="16" aria-hidden="true">
+                <path d="M3 10L16.5 3.5 11 10l5.5 6.5L3 10z" fill="currentColor"/>
               </svg>
             </button>
           </div>
-          <p class="input-hint" id="input-hint">Press Enter to send</p>
         </form>
-      </footer>
+      </div>
 
     </main>
   </div>
