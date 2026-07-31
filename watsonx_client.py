@@ -23,6 +23,29 @@ import time
 import threading
 import requests
 
+# ── Load .env file if present (no extra library required) ─────────────────
+def _load_dotenv(path: str = ".env") -> None:
+    """
+    Read KEY=VALUE pairs from a .env file and set them as environment variables.
+    Skips blank lines and lines starting with #.
+    Does NOT override variables already set in the environment.
+    """
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key   = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except FileNotFoundError:
+        pass  # .env is optional
+
+_load_dotenv()
+
 # ── Config ────────────────────────────────────────────────────────────────
 WATSONX_API_KEY    = os.environ.get("WATSONX_API_KEY",    "placeholder-key")
 WATSONX_PROJECT_ID = os.environ.get("WATSONX_PROJECT_ID", "placeholder-project-id")
