@@ -350,7 +350,18 @@ html, body {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   gap: 16px;
+  transition: background 0.3s, border-color 0.3s;
 }
+
+/* Topbar turns dark when welcome hero is visible */
+.topbar.hero-mode {
+  background: #0d0b1a;
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+
+.topbar.hero-mode .page-title { color: rgba(255,255,255,0.95); }
+.topbar.hero-mode .prog-group { display: none; }
+.topbar.hero-mode .stage-pill { background: rgba(99,102,241,0.2); color: rgba(255,255,255,0.8); border: 1px solid rgba(99,102,241,0.35); }
 
 .topbar-left { display: flex; align-items: center; gap: 10px; }
 
@@ -465,69 +476,199 @@ html, body {
 /* ── Welcome / hero screen ───────────────────────────────────────── */
 
 .welcome-screen {
+  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: 60px 40px;
-  flex: 1;
-  gap: 16px;
-  animation: fadeUp 0.4s ease;
+  background: #0d0b1a;   /* deep dark — competition grade */
+  position: relative;
+  overflow: hidden;
 }
 
 .welcome-screen.hidden { display: none; }
 
+/* Glowing orbs — pure CSS, no images needed */
+.hero-bg { position: absolute; inset: 0; pointer-events: none; }
+
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  animation: orbFloat 8s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+  top: -100px; left: -100px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+  bottom: -80px; right: -80px;
+  animation-delay: 3s;
+}
+
+.orb-3 {
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+  top: 40%; left: 55%;
+  animation-delay: 5s;
+  opacity: 0.25;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(20px, -20px) scale(1.05); }
+  66%       { transform: translate(-15px, 15px) scale(0.97); }
+}
+
+/* Hero inner content */
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  padding: 48px 40px;
+  max-width: 640px;
+  animation: fadeUp 0.5s ease;
+}
+
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.welcome-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%);
-  display: flex;
+/* IBM watsonx badge */
+.hero-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(99,102,241,0.35);
-  margin-bottom: 4px;
+  gap: 7px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.4);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.2px;
+  backdrop-filter: blur(8px);
 }
 
-.welcome-title {
-  font-size: 22px;
+.hero-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.3);
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16,185,129,0.3); }
+  50%       { box-shadow: 0 0 0 6px rgba(16,185,129,0.15); }
+}
+
+/* Hero headline */
+.hero-title {
+  font-size: 46px;
   font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.5px;
-  max-width: 420px;
+  color: #fff;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  margin: 0;
 }
 
-.welcome-sub {
-  font-size: 14px;
-  color: var(--text-3);
+.hero-title-accent {
+  background: linear-gradient(90deg, #818cf8 0%, #a78bfa 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.6);
   line-height: 1.7;
-  max-width: 460px;
+  max-width: 480px;
 }
 
-.welcome-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+/* Hero CTA button */
+.btn-hero-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 28px;
+  background: linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-xl);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.5);
+  letter-spacing: -0.2px;
   margin-top: 4px;
 }
 
-.chip {
-  padding: 5px 13px;
-  border-radius: 999px;
-  font-size: 12px;
+.btn-hero-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.6);
+}
+
+.btn-hero-start:active { transform: translateY(0); }
+
+/* Feature grid */
+.hero-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.hero-feat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--r-l);
+  backdrop-filter: blur(4px);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.hero-feat:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.16);
+}
+
+.feat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-m);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hero-feat span {
+  font-size: 11px;
   font-weight: 600;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  box-shadow: var(--sh-s);
+  color: rgba(255,255,255,0.65);
+  text-align: center;
 }
 
 /* ── Chat log ────────────────────────────────────────────────────── */
@@ -612,6 +753,31 @@ html, body {
 }
 
 .campaign-output.hidden { display: none; }
+
+/* watsonx badge on campaign output */
+.watsonx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(99,102,241,0.1) 0%, rgba(124,58,237,0.1) 100%);
+  border: 1px solid rgba(99,102,241,0.25);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-d);
+  margin-bottom: 20px;
+}
+
+.watsonx-badge svg { flex-shrink: 0; }
+
+.watsonx-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+}
 
 /* Campaign header */
 .campaign-header { margin-bottom: 24px; }
