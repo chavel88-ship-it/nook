@@ -137,16 +137,16 @@ Open [http://localhost:5000](http://localhost:5000) — the app runs in mock mod
 
 **Windows PowerShell:**
 ```powershell
-$env:WATSONX_API_KEY    = "your-ibm-cloud-api-key"
-$env:WATSONX_PROJECT_ID = "your-watsonx-project-id"
+$env:WATSONX_API_KEY    = "nWhzv40u-3HTo7mTEYCJdaUyj_j6yh6ATJUSsrNnht3d"
+$env:WATSONX_PROJECT_ID = "ff3bfe4b-5c9c-4deb-9c62-77344d4c12a0"
 $env:WATSONX_USE_MOCK   = "false"
 python app.py
 ```
 
 **macOS / Linux:**
 ```bash
-export WATSONX_API_KEY=your-ibm-cloud-api-key
-export WATSONX_PROJECT_ID=your-watsonx-project-id
+export WATSONX_API_KEY= nWhzv40u-3HTo7mTEYCJdaUyj_j6yh6ATJUSsrNnht3d
+export WATSONX_PROJECT_ID= ff3bfe4b-5c9c-4deb-9c62-77344d4c12a0
 export WATSONX_USE_MOCK=false
 python app.py
 ```
