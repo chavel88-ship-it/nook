@@ -195,16 +195,14 @@ nook/
 
 ## Builder
 
-**William** — IT Support Engineer, solo build
-United Kingdom
-
-> *Add your full name before submission.*
+**William Chipungu** — IT Support Engineer, solo build
+South Africa
 
 ---
 
 ## IBM SkillsBuild
 
-> *Paste your certificate link or attach the PDF before submission.*
+https://skills.yourlearning.ibm.com/activity/ALM-COURSE_4071307?ngo-id=0302&utm_campaign=aca-ai-builders-challenge
 
 ---
 
