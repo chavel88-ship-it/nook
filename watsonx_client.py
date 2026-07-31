@@ -28,7 +28,8 @@ def _load_dotenv(path: str = ".env") -> None:
     """
     Read KEY=VALUE pairs from a .env file and set them as environment variables.
     Skips blank lines and lines starting with #.
-    Does NOT override variables already set in the environment.
+    ALWAYS overrides — .env is the source of truth so stale terminal values
+    from previous sessions cannot corrupt the URL or mock flag.
     """
     try:
         with open(path) as f:
@@ -39,8 +40,8 @@ def _load_dotenv(path: str = ".env") -> None:
                 key, _, value = line.partition("=")
                 key   = key.strip()
                 value = value.strip().strip('"').strip("'")
-                if key and key not in os.environ:
-                    os.environ[key] = value
+                if key:
+                    os.environ[key] = value   # always override
     except FileNotFoundError:
         pass  # .env is optional
 
